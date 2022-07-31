@@ -1,0 +1,116 @@
+---
+title: "R Bridge Course Week 3 Assignment"
+author: "Melissa Bowman"
+date: "2022-07-28"
+output: html_document
+---
+
+## Directly Measurable Values using Baseball (1997 to 2007)
+
+For the final, I wanted to explore directly measurable values using baseball statistics. Specifically, by using batting averages to determine what’s the least amount, what is the average amount, and what’s the above average amount of hits to up at bat ratio in the major leagues during 1997- 2007. The data set used was outsource from the following site: https://vincentarelbundock.github.io/Rdatasets/ under the titled Yearly batting records for all major league baseball players. The list of variables for the dataset can be found from this site: https://vincentarelbundock.github.io/Rdatasets/doc/plyr/baseball.html.  
+
+Batting averages are a tool used in major league baseball to measure if a player will successfully connect with an oncoming ball at home plate. Battling averages are determined by dividing successful hits by total of times a player is at bat.
+
+In the given dataset batting averages where not calculated. Therefore, a column was including in dataset calculating averages multiplied by 100 to get a percentage titled **batting averages**. 
+
+```{r}
+library(dplyr)
+setwd("c:/Users/Melissa/OneDrive/Documents/CUNY/Bridge/R/Homework 3")
+
+df <- read.csv('baseball.csv')
+View(df)
+
+df_h = transform(df, batting_average = h/ab)
+df_ba_col_exclude = df_h %>% select(-X2b, -X3b, -stint, -ibb, -hbp,-sh, -gidp, -sf)
+print(df_ba_col_exclude[1:5,])
+```
+
+When looking at the batting average summary, there are infinite values for the mean and NA values and looking through the data, we see averages at zero, and overly high batting averages.
+
+```{r}
+summary(df_h[c('batting_average')])
+```
+![Batting Average at Zero](c:/Users/Melissa/OneDrive/Documents/CUNY/Bridge/R/Homework 3/ba_zero.png)
+
+![Batting Average with Outliner Value](c:/Users/Melissa/OneDrive/Documents/CUNY/Bridge/R/Homework 3/ba_0.50.png)
+
+
+This skewed the mean variable for the batting averages over the years of batting record. Therefore, I excluded batting averages that where zero, infinite, NA, above 0.50, and any number of times at bat below 100 times.
+
+```{r}
+without_outliers_all_years = subset(df_h, !is.infinite(batting_average) 
+                          & !is.na(batting_average) & batting_average < 0.50
+                          & batting_average > 0 & ab > 99)
+
+summary(without_outliers_all_years[c('batting_average')])
+```
+
+After cleaning the data, I then just wanted to isolate the data from the year 1997-2007.
+
+```{r}
+
+df_97_07_ba = subset(without_outliers_all_years, year > 1996)
+
+summary(df_97_07_ba[c('batting_average')])
+
+```
+From the summary of the batting average, the minimum average is 0.150, the mean average need is 0.274 and the max average is 0.379 in the major leagues during 1997-2007. 
+
+The following is a visualization of the batting averages from 1997-2007 in a histogram plot: 
+
+```{r}
+
+# Historgram: Batting Average from 1997-2007 
+hist(df_97_07_ba$batting_average, 
+     xlab="Batting Average", 
+     ylab = 'Player Amount',
+     main="Distribution of Batting Average from 1997-2007", 
+     col="darkgreen")
+
+```
+I also wanted to compare the batting averages from 1997-2007 to years overall time to see if the batting average has been consistent throughout the years. 
+
+In the following box plot you can see a blue line indicate the mean of batting averages being 0.270 in both plots.  This indicates that the batting average of 0.270 has consistently been the standard batting average since statistics in baseball was recorded in 1871. Therefore the year from 1997-2007 did not deviate from the overall average. 
+
+```{r}
+boxplot(df_97_07_ba$batting_average ~ df_97_07_ba$year, outline = FALSE,
+        main = 'Batting Average from 1997-2007',
+        xlab = 'Year(1997-2007)',
+        ylab = 'Batting Average')
+
+abline(h = 0.2700, col = 'blue',lwd = 2 )
+```
+```{r}
+
+boxplot(without_outliers_all_years$batting_average ~ without_outliers_all_years$year, 
+        outline = FALSE,
+        main = 'Batting Average from 1871-2007',
+        xlab = 'Year(1997-2007)',
+        ylab = 'Batting Average') 
+
+abline(h=0.2700, col="blue", lwd = 2)
+```
+In conclusion, the batting average from 1997-2007 was approximately 0.270. The very minimum batting average was 0.150 and the maximum value was 0.379. The batting average from 1997-2007 is consistent with the overall years of batting averages through recorded baseball history. It is a curious factor though, that by looking at just the minimum and maximum batting average in baseball, I could not come to a definite answer as to who was the best and worst player during 1997-2007. 
+
+Take the following into account, when I look at the best overall batting average in the data set the player that sits on top is Larry Walker. But as I look at other data points, like home runs (defined as a hit that allows the player to complete an unstoppable circuit of bases and to score a run themselves), there is a player that surpasses his amount, Barry Bonds. When looking to determine which player had the most home runs, Barry Bonds led players from 1997-2007 including 2001 when he had 73 home runs. The following year (2002) however, he only hit 46 homeruns. Why did he have such a big decline in homerun numbers from 2001 to 2002? Another key statistic that Barry Bonds accumulated a high amount of was walks. From 1997- 2007 he finished in the top 3 for numbers of walks with 232 in 2004, 198 in 2002, and 177 in 2001.  Was there a correlation here?  The following scatter plot shows the correlation between home runs verse number of walks: 
+
+
+```{r}
+#library(ggplot2)
+
+plot(x = df_97_07_ba$hr,y = df_97_07_ba$bb,
+     xlab = "Home Runs",
+     ylab = "Walks",
+     xlim = c(10, 75),
+     ylim = c(10,235),		 
+     main = "Home Runs vs Walks from 1997- 2007"
+) 
+
+abline(reg = lm(df_97_07_ba$bb ~ df_97_07_ba$hr),
+       col = "red",
+       lwd = 2)
+
+#geom_point(aes(color=id$bondsba01)) === Trying to show only Barry Bonds points. Could not due in time
+```
+As you can see from the plot, there is a linear progression. This leads to the conclusion that the higher number of home runs means that there is a greater number of walks. This proves that I would need to consider this factor in determining best player. Therefore, there is no one single statistical factor that determines the best or worst player. You would need to consider the other factors. 
+
